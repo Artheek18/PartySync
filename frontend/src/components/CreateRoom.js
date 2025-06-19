@@ -1,175 +1,227 @@
 import React, { useState } from "react";
-import Button from "@mui/material/Button"
-import Grid from "@mui/material/Grid";
-import TextField from "@mui/material/TextField";
-import Typography from "@mui/material/Typography";
-import FormControl from "@mui/material/FormControl";
-import FormHelperText from "@mui/material/FormHelperText";
-import Radio from "@mui/material/Radio";
-import RadioGroup from "@mui/material/RadioGroup";
-import FormControlLabel from "@mui/material/FormControlLabel";
-import { Link } from "react-router-dom";
+import {
+    Button,
+    Grid,
+    TextField,
+    Typography,
+    FormControl,
+    FormHelperText,
+    Radio,
+    RadioGroup,
+    FormControlLabel,
+    Collapse,
+    Alert,
+} from "@mui/material";
+import { Link, useNavigate } from "react-router-dom";
 
-
-function CreateRoom() {
-    const [guestCanPause, setGuestCanPause] = useState("true");
-    const [votesToSkip, setVotesToSkip] = useState(2);
+function CreateRoom({
+    update = false,
+    votesToSkip = 2,
+    guestCanPause = "true",
+    roomCode = null,
+    updateCallback = () => {},
+}) {
+    const [guestCanPauseState, setGuestCanPauseState] = useState(guestCanPause);
+    const [votesToSkipState, setVotesToSkipState] = useState(votesToSkip);
     const [loading, setLoading] = useState(false);
     const [errorMsg, setErrorMsg] = useState("");
     const [successMsg, setSuccessMsg] = useState("");
+    const navigate = useNavigate();
 
     const handleGuestCanPauseChange = (event) => {
-        setGuestCanPause(event.target.value);
+        setGuestCanPauseState(event.target.value);
     };
 
     const handleVotesChange = (event) => {
-        setVotesToSkip(event.target.value);
+        setVotesToSkipState(event.target.value);
     };
-
-    // Mock function to simulate an API call
-    async function createRoomApi(data) {
-        return new Promise((resolve, reject) => {
-        setTimeout(() => {
-            if (data.votesToSkip < 1) {
-            reject(new Error("Votes to skip must be at least 1"));
-            } else {
-            resolve({ roomCode: "ABCD1234" }); // example response
-            }
-        }, 1000);
-        });
-    }
 
     const handleRoomButtonPressed = async () => {
-  setLoading(true);
-  setErrorMsg("");
-  setSuccessMsg("");
+        setLoading(true);
+        setErrorMsg("");
+        setSuccessMsg("");
 
-    try {
-        const requestOptions = {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            guest_can_pause: guestCanPause === "true", // snake_case (Django expects this)
-            vote_to_skip: Number(votesToSkip),         // snake_case (Django expects this)
-        }),
-        };
+        try {
+            const requestOptions = {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    guest_can_pause: guestCanPauseState === "true",
+                    votes_to_skip: Number(votesToSkipState),
+                }),
+            };
 
-        const response = await fetch('/api/create-room', requestOptions); // 🔄 await fetch() properly here
+            const response = await fetch('/api/create-room', requestOptions);
+            const data = await response.json();
 
-        const data = await response.json(); // read response body
+            if (!response.ok) {
+                throw new Error("Server responded with an error!");
+            }
 
-        console.log("Response JSON:", data); 
-
-        if (!response.ok) {
-        throw new Error("Server responded with an error!");
+            setSuccessMsg(`Room created! Your room code: ${data.code || "Unknown"}`);
+            updateCallback(); // works only for create mode
+        } catch (error) {
+            setErrorMsg(error.message || "Failed to create room");
+        } finally {
+            setLoading(false);
         }
-
-        setSuccessMsg(`Room created! Your room code: ${data.code || "Unknown"}`);
-    } catch (error) {
-        setErrorMsg(error.message || "Failed to create room");
-    } finally {
-        setLoading(false);
-    }
     };
+
+    const handleUpdateButtonPressed = async () => {
+        setLoading(true);
+        setErrorMsg("");
+        setSuccessMsg("");
+
+        try {
+            const requestOptions = {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    guest_can_pause: guestCanPauseState === "true",
+                    votes_to_skip: Number(votesToSkipState),
+                    code: roomCode,
+                }),
+            };
+
+            const response = await fetch('/api/update-room', requestOptions);
+            await response.json();
+
+            if (!response.ok) {
+                throw new Error("Server responded with an error!");
+            }
+
+            setSuccessMsg("Room updated successfully!");
+            // ⚠️ Notice: No auto-close here. User will manually close by clicking "Close" button.
+        } catch (error) {
+            setErrorMsg(error.message || "Failed to update room");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const title = update ? "Update Room" : "Create A Room";
+
+    const renderCreateButtons = () => (
+        <>
+            <Button
+                variant="contained"
+                color="primary"
+                onClick={handleRoomButtonPressed}
+                disabled={loading}
+                fullWidth
+                sx={{ mt: 3 }}
+            >
+                {loading ? "Creating..." : "Create A Room"}
+            </Button>
+
+            <Button
+                variant="contained"
+                color="secondary"
+                component={Link}
+                to="/"
+                disabled={loading}
+                fullWidth
+                sx={{ mt: 1 }}
+            >
+                Back
+            </Button>
+        </>
+    );
+
+    const renderUpdateButtons = () => (
+        <>
+            <Button
+                variant="contained"
+                color="primary"
+                onClick={handleUpdateButtonPressed}
+                disabled={loading}
+                fullWidth
+                sx={{ mt: 3 }}
+            >
+                {loading ? "Updating..." : "Update Room"}
+            </Button>
+
+            <Button
+                variant="contained"
+                color="secondary"
+                onClick={updateCallback} // manually close when user clicks "Close"
+                disabled={loading}
+                fullWidth
+                sx={{ mt: 1 }}
+            >
+                Close
+            </Button>
+        </>
+    );
 
     return (
         <Grid
-        container
-        justifyContent="center"
-        alignItems="center"  // ← this vertically centers
-        style={{
-            width: "100vw",      // full viewport width
-            height: "100vh"
-            //padding: 16,
-            //marginTop: 130,
-        }}
+            container
+            justifyContent="center"
+            alignItems="center"
+            style={{ width: "100vw", height: "100vh" }}
         >
-        {/* The item Grid has fixed maxWidth and 100% width for inputs inside */}
-        <Grid
-            item
-            style={{
-            maxWidth: 350,
-            width: "100%",
-            textAlign: "center",
-            }}
-        >
-            <Typography component="h4" variant="h4" gutterBottom>
-            Create A Room
-            </Typography>
+            <Grid item style={{ maxWidth: 350, width: "100%", textAlign: "center" }}>
+                <Typography component="h4" variant="h4" gutterBottom>
+                    {title}
+                </Typography>
 
-            <FormControl component="fieldset" style={{ width: "100%" }}>
-            <FormHelperText style={{ marginBottom: 8 , textAlign: "center"}}>
-                Guest Control of Playback State
-            </FormHelperText>
-            <RadioGroup
-                row
-                value={guestCanPause}
-                onChange={handleGuestCanPauseChange}
-                style={{ justifyContent: "center" }}
-            >
-                <FormControlLabel
-                value="true"
-                control={<Radio color="primary" />}
-                label="Play/Pause"
-                labelPlacement="bottom"
-                />
-                <FormControlLabel
-                value="false"
-                control={<Radio color="secondary" />}
-                label="No Control"
-                labelPlacement="bottom"
-                />
-            </RadioGroup>
-            </FormControl>
+                <Collapse in={errorMsg !== "" || successMsg !== ""} sx={{ mt: 2 }}>
+                    {successMsg !== "" ? (
+                        <Alert severity="success" onClose={() => setSuccessMsg("")}>
+                            {successMsg}
+                        </Alert>
+                    ) : (
+                        <Alert severity="error" onClose={() => setErrorMsg("")}>
+                            {errorMsg}
+                        </Alert>
+                    )}
+                </Collapse>
 
-            <FormControl style={{ width: "100%", marginTop: 16 }}>
-            <TextField
-                required
-                type="number"
-                onChange={handleVotesChange}
-                value={votesToSkip}
-                inputProps={{ min: 1, style: { textAlign: "center" } }}
-                disabled={loading}
-                fullWidth
-            />
-            <FormHelperText style={{textAlign: "center"}}>Votes Required To Skip Song</FormHelperText>
-            </FormControl>
+                <FormControl component="fieldset" style={{ width: "100%" }}>
+                    <FormHelperText style={{ marginBottom: 8, textAlign: "center" }}>
+                        Guest Control of Playback State
+                    </FormHelperText>
+                    <RadioGroup
+                        row
+                        value={guestCanPauseState}
+                        onChange={handleGuestCanPauseChange}
+                        style={{ justifyContent: "center" }}
+                    >
+                        <FormControlLabel
+                            value="true"
+                            control={<Radio color="primary" />}
+                            label="Play/Pause"
+                            labelPlacement="bottom"
+                        />
+                        <FormControlLabel
+                            value="false"
+                            control={<Radio color="secondary" />}
+                            label="No Control"
+                            labelPlacement="bottom"
+                        />
+                    </RadioGroup>
+                </FormControl>
 
-            {errorMsg && (
-            <Typography color="error" sx={{ mt: 2 }}>
-                {errorMsg}
-            </Typography>
-            )}
-            {successMsg && (
-            <Typography color="success.main" sx={{ mt: 2 }}>
-                {successMsg}
-            </Typography>
-            )}
+                <FormControl style={{ width: "100%", marginTop: 16 }}>
+                    <TextField
+                        required
+                        type="number"
+                        onChange={handleVotesChange}
+                        value={votesToSkipState}
+                        inputProps={{ min: 1, style: { textAlign: "center" } }}
+                        disabled={loading}
+                        fullWidth
+                    />
+                    <FormHelperText style={{ textAlign: "center" }}>
+                        Votes Required To Skip Song
+                    </FormHelperText>
+                </FormControl>
 
-            <Button
-            variant="contained"
-            color="primary"
-            onClick={handleRoomButtonPressed}
-            disabled={loading}
-            fullWidth
-            sx={{ mt: 3 }}
-            >
-            {loading ? "Creating..." : "Create A Room"}
-            </Button>
-
-            <Button
-            variant="contained"
-            color="secondary"
-            component={Link}
-            to="/"
-            disabled={loading}
-            fullWidth
-            sx={{ mt: 1 }}
-            >
-            Back
-            </Button>
-        </Grid>
+                {update ? renderUpdateButtons() : renderCreateButtons()}
+            </Grid>
         </Grid>
     );
 }
+
 export default CreateRoom;

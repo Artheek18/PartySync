@@ -8,9 +8,14 @@ import Room from "./Room";
 
 function App(props) {
     //const [count, setCount] = useState(0);
+    const [roomCode, setRoomCode] = useState(null);
+
+    const clearRoomCode = () => {
+        setRoomCode(null);
+    };
 
     return (
-        <div class="center">
+        <div className="center">
            { /*<h1>TESTING REACT CODE with {props.name}</h1>
             <p>Count: {count}</p>
             <button onClick={() => setCount(count + 1)}>Increment</button>*/}
@@ -19,7 +24,7 @@ function App(props) {
                 <Route path="/" element={<Homepage />} />
                 <Route path="/create" element={<CreateRoom />} />
                 <Route path="/join" element={<JoinRoom />} />
-                <Route path="/room/:roomCode" element={<Room />} />
+                <Route path="/room/:roomCode" element={<Room leaveRoomCallback={clearRoomCode} />} />
             </Routes>
         </Router>
         </div>
