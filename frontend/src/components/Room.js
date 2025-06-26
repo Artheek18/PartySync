@@ -10,6 +10,7 @@ export default function Room({ leaveRoomCallback }) {
   const [guestCanPause, setGuestCanPause] = useState(false);
   const [isHost, setIsHost] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [spotifyAuth, setSpotifyAuth] = useState(false); 
 
   const getRoomDetails = async () => {
       try {
@@ -23,10 +24,32 @@ export default function Room({ leaveRoomCallback }) {
         setVotesToSkip(data.votes_to_skip);
         setGuestCanPause(data.guest_can_pause);
         setIsHost(data.is_host);
+
+        if (data.is_host) {
+        authenticateSpotify();
+      }
+
+
       } catch (error) {
         console.error("Error fetching room details:", error);
       }
     };
+
+  const authenticateSpotify = async () => {
+    try {
+      const response = await fetch("/spotify/is-authenticated/");
+      const data = await response.json();
+      setSpotifyAuth(data.status);
+
+      if (!data.status) {
+        const authResponse = await fetch("/spotify/get-auth-url/");
+        const authData = await authResponse.json();
+        window.location.replace(authData.url); // Redirect to Spotify login
+      }
+    } catch (error) {
+      console.error("Spotify auth error:", error);
+    }
+  };
 
 
   useEffect(() => {
@@ -113,6 +136,15 @@ export default function Room({ leaveRoomCallback }) {
               Host: {isHost.toString()}
             </Typography>
           </Grid>
+          
+          {isHost && (
+            <Grid item xs={12} align="center">
+              <Typography variant="subtitle1">
+                Spotify Authenticated: {spotifyAuth ? "✅ Yes" : "❌ No"}
+              </Typography>
+            </Grid>
+          )}
+          
           {isHost && renderSettingsButton()}
           <Grid item xs={12} align="center">
             <Button variant="contained" color="secondary" onClick={leaveButtonPressed}>

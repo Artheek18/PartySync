@@ -59,10 +59,10 @@ export default function JoinRoom() {
           Join A Room
         </Typography>
         <TextField
-          error={!!error} // true if error message exists
+          error={!!error} 
           label="Code"
           placeholder="Enter Room Code"
-          value={roomCode} // controlled input
+          value={roomCode}
           onChange={handleTextFieldChange}
           helperText={error}
           variant="outlined"

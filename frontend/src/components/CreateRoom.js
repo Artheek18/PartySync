@@ -59,7 +59,7 @@ function CreateRoom({
             }
 
             setSuccessMsg(`Room created! Your room code: ${data.code || "Unknown"}`);
-            updateCallback(); // works only for create mode
+            updateCallback(); 
         } catch (error) {
             setErrorMsg(error.message || "Failed to create room");
         } finally {
@@ -91,7 +91,6 @@ function CreateRoom({
             }
 
             setSuccessMsg("Room updated successfully!");
-            // ⚠️ Notice: No auto-close here. User will manually close by clicking "Close" button.
         } catch (error) {
             setErrorMsg(error.message || "Failed to update room");
         } finally {
@@ -144,7 +143,7 @@ function CreateRoom({
             <Button
                 variant="contained"
                 color="secondary"
-                onClick={updateCallback} // manually close when user clicks "Close"
+                onClick={updateCallback} 
                 disabled={loading}
                 fullWidth
                 sx={{ mt: 1 }}
