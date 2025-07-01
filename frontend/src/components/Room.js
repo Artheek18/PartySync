@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Grid, Button, Typography } from "@mui/material";
 import CreateRoom from "./CreateRoom";
+import MusicPlayer from "./MusicPlayer";
 
 export default function Room({ leaveRoomCallback }) {
   const { roomCode } = useParams();
@@ -10,30 +11,28 @@ export default function Room({ leaveRoomCallback }) {
   const [guestCanPause, setGuestCanPause] = useState(false);
   const [isHost, setIsHost] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [spotifyAuth, setSpotifyAuth] = useState(false); 
+  const [spotifyAuth, setSpotifyAuth] = useState(false);
+  const [song, setSong] = useState(null);
 
   const getRoomDetails = async () => {
-      try {
-        const response = await fetch(`/api/get-room?code=${roomCode}`);
-        if (!response.ok) {
-          leaveRoomCallback();
-          navigate("/");
-          return;
-        }
-        const data = await response.json();
-        setVotesToSkip(data.votes_to_skip);
-        setGuestCanPause(data.guest_can_pause);
-        setIsHost(data.is_host);
-
-        if (data.is_host) {
+    try {
+      const response = await fetch(`/api/get-room?code=${roomCode}`);
+      if (!response.ok) {
+        leaveRoomCallback();
+        navigate("/");
+        return;
+      }
+      const data = await response.json();
+      setVotesToSkip(data.votes_to_skip);
+      setGuestCanPause(data.guest_can_pause);
+      setIsHost(data.is_host);
+      if (data.is_host) {
         authenticateSpotify();
       }
-
-
-      } catch (error) {
-        console.error("Error fetching room details:", error);
-      }
-    };
+    } catch (error) {
+      console.error("Error fetching room details:", error);
+    }
+  };
 
   const authenticateSpotify = async () => {
     try {
@@ -44,29 +43,47 @@ export default function Room({ leaveRoomCallback }) {
       if (!data.status) {
         const authResponse = await fetch("/spotify/get-auth-url/");
         const authData = await authResponse.json();
-        window.location.replace(authData.url); // Redirect to Spotify login
+        window.location.replace(authData.url);
       }
     } catch (error) {
       console.error("Spotify auth error:", error);
     }
   };
 
+  const getCurrentSong = async () => {
+    try {
+      const response = await fetch("/spotify/current-song");
+      if (!response.ok) {
+        setSong(null);
+      } else {
+        const data = await response.json();
+        setSong(data);
+      }
+    } catch (error) {
+      console.error("Error fetching current song:", error);
+    }
+  };
 
   useEffect(() => {
     getRoomDetails();
-  }, [roomCode, navigate, leaveRoomCallback]);
+  }, []);
+
+  useEffect(() => {
+    if (!spotifyAuth) return;
+    const interval = setInterval(getCurrentSong, 1000);
+    return () => clearInterval(interval);
+  }, [spotifyAuth]);
 
   const leaveButtonPressed = async () => {
     try {
-      const requestOptions = {
+      await fetch("/api/leave-room", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-      };
-      await fetch("/api/leave-room", requestOptions);
+      });
       leaveRoomCallback();
       navigate("/");
     } catch (error) {
-      console.error("Error leaving the room:", error);
+      console.error("Error leaving room:", error);
     }
   };
 
@@ -74,34 +91,24 @@ export default function Room({ leaveRoomCallback }) {
     setShowSettings(value);
   };
 
-  const renderSettings = () => (
-    <Grid container spacing={1}>
-      <Grid item xs={12} align="center">
-        <CreateRoom
-          update={true}
-          votesToSkip={votesToSkip}
-          guestCanPause={guestCanPause.toString()} 
-          roomCode={roomCode}
-          updateCallback={() => {
-             getRoomDetails();
-            updateShowSettings(false); 
-          }}
-        />
+  if (showSettings) {
+    return (
+      <Grid container spacing={1}>
+        <Grid item xs={12} align="center">
+          <CreateRoom
+            update={true}
+            votesToSkip={votesToSkip}
+            guestCanPause={guestCanPause.toString()}
+            roomCode={roomCode}
+            updateCallback={() => {
+              getRoomDetails();
+              updateShowSettings(false);
+            }}
+          />
+        </Grid>
       </Grid>
-    </Grid>
-  );
-
-  const renderSettingsButton = () => (
-    <Grid item xs={12} align="center">
-      <Button
-        variant="contained"
-        color="primary"
-        onClick={() => updateShowSettings(true)}
-      >
-        Settings
-      </Button>
-    </Grid>
-  );
+    );
+  }
 
   return (
     <Grid
@@ -110,49 +117,49 @@ export default function Room({ leaveRoomCallback }) {
       direction="column"
       justifyContent="center"
       alignItems="center"
-      style={{ minHeight: "100vh" }}
+      style={{ minHeight: "100vh", transform: "translateY(-100px)" }}
     >
-      {showSettings ? (
-        renderSettings()
+      {song ? (
+        <>
+          <Grid item xs={12} align="center">
+            <Typography variant="h4">Code: {roomCode}</Typography>
+          </Grid>
+          <Grid item xs={12}>
+            <MusicPlayer {...song} />
+          </Grid>
+        </>
       ) : (
         <>
           <Grid item xs={12} align="center">
-            <Typography variant="h4" component="h4">
-              Code: {roomCode}
-            </Typography>
+            <Typography variant="h4">Code: {roomCode}</Typography>
           </Grid>
           <Grid item xs={12} align="center">
-            <Typography variant="h6" component="h6">
-              Votes: {votesToSkip}
-            </Typography>
+            <Typography variant="h6">Votes: {votesToSkip}</Typography>
           </Grid>
           <Grid item xs={12} align="center">
-            <Typography variant="h6" component="h6">
+            <Typography variant="h6">
               Guest Can Pause: {guestCanPause.toString()}
             </Typography>
           </Grid>
           <Grid item xs={12} align="center">
-            <Typography variant="h6" component="h6">
-              Host: {isHost.toString()}
-            </Typography>
-          </Grid>
-          
-          {isHost && (
-            <Grid item xs={12} align="center">
-              <Typography variant="subtitle1">
-                Spotify Authenticated: {spotifyAuth ? "✅ Yes" : "❌ No"}
-              </Typography>
-            </Grid>
-          )}
-          
-          {isHost && renderSettingsButton()}
-          <Grid item xs={12} align="center">
-            <Button variant="contained" color="secondary" onClick={leaveButtonPressed}>
-              Leave Room
-            </Button>
+            <Typography variant="h6">Host: {isHost.toString()}</Typography>
           </Grid>
         </>
       )}
+
+      {isHost && (
+        <Grid item xs={12} align="center">
+          <Button variant="contained" onClick={() => updateShowSettings(true)}>
+            Settings
+          </Button>
+        </Grid>
+      )}
+
+      <Grid item xs={12} align="center">
+        <Button variant="contained" color="secondary" onClick={leaveButtonPressed}>
+          Leave Room
+        </Button>
+      </Grid>
     </Grid>
   );
 }
