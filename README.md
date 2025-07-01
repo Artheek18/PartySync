@@ -1,43 +1,58 @@
 # 🎉 PartySync
 
-PartySync is a web application that allows friends to listen to music together in shared virtual rooms. Users can create, join, and customize these rooms by setting how many votes are needed to skip a song and whether guests can control playback. This creates a fun and interactive shared listening experience.
+PartySync is a real-time, full-stack web application that allows users to listen to music together in shared virtual rooms powered by Spotify. Whether you're hanging out remotely or hosting a listening party, PartySync lets friends vote on tracks, control playback (if allowed), and enjoy synchronized music playback across devices.
 
 ## 🚀 Tech Stack
 
 - **Frontend**: React (with React Router, Hooks, Material UI v7)
 - **Backend**: Django (Django REST Framework)
+- **Music API**: Spotify Web API (OAuth2)
 
 ## 🔧 Features
 
-- **Create Room**: 
-  - Set the number of votes required to skip a song.
-  - Allow or disallow guests to control playback (play/pause).
-  
-- **Join Room**: 
-  - Enter a room code to join an existing room.
+### 🎶 Room Creation & Management
+- Create a room with customizable settings:
+  - Votes required to skip a song.
+  - Toggle guest control of playback (play/pause).
+- Join a room by entering a room code.
+- Room hosts can update settings anytime.
 
-- **Update Room Settings (Host Only)**:
-  - Hosts can change room settings anytime.
-  - Feedback provided via success/error alerts that the user can manually dismiss (no automatic redirect).
+### 🟢 Spotify Integration
+- Hosts authenticate with their Spotify account.
+- Real-time playback data shown via Spotify API.
+- Displays current song, artist, album art, and progress bar.
 
-- **Leave Room**:
-  - Users can leave the room and return to the homepage.
+### ✅ Host Controls & Voting
+- Hosts manage playback through Spotify.
+- Guests can vote to skip songs.
+- Guest playback control is host-configurable.
 
-## 🛠️ Future Improvements
+### 🧼 Clean Exit Flow
+- Easily leave rooms and return to the homepage.
 
-- **Spotify API Integration**:
-  - Spotify account authentication.
-  - Real music playback and control via Spotify in the shared room.
+---
 
-- **Real-Time Updates**:
-  - Live room state updates using WebSockets.
+## 📱 UI & UX Highlights
 
-- **UI/UX Enhancements**:
-  - Mobile responsiveness.
-  - Dark mode support.
+- Clean and modern design using **Material UI v7**.
+- Responsive layout and accessible controls.
+- Dynamic UI: hides room settings once music starts playing.
 
+---
+
+## 🛠️ Planned Improvements
+
+- **Real-Time Room Sync**:
+  - Integrate WebSockets for live updates across users.
+- **UI Enhancements**:
+  - Mobile optimization.
+  - Dark mode toggle.
 - **Room Discovery**:
-  - Ability to browse or search public rooms.
+  - Browse and join public listening rooms.
+- **Chat & Reactions**:
+  - Add chat features or reactions to enhance interaction.
+
+---
 
 ## ⚙️ Local Setup
 
